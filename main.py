@@ -3,23 +3,50 @@
 # SPDX-FileCopyrightText: YAZAWA Kenichi (2022)
 # SPDX-License-Identifier: BSD 3-Clause "New" or "Revised" License
 
+# スクレイピング用のモジュール
 # urllib は標準で用意されている
-# そのうちの request の利用
 import urllib
 from urllib import request
-# pip install chardet
-import chardet
+import requests
 from bs4 import BeautifulSoup
-import numpy as np
-import os
-import cv2
-import time
 
-DOMAIN = 'http://kemono.party'
-ARTICLE_CLASS = 'post-card post-card--preview'
-ANCHOR_CLASS = ['fileThumb', 'image-link']
-DOWNLOAD_DIR = './downloads'
+# 基本モジュール
+import os
+import time
+import sys
+
+# 画像変換
+import cv2
+
+# 動的サイト捜査
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+# import chromedriver_binary
+
+DOMAIN = 'http://oreno3d.com'
+FIGURE_CLASS = 'video-figure'
+VIDEO_CLASS = "vjs-tech"
+
+COUNT = 5
+DOWNLOAD_DIR = './downloads/'
 URL_LIST_FILE = "./url/url"
+UI = True
+
+# 引数を解析する
+def get_args(ui = True):
+    usage = "Usage: %prog"
+    parser = OptionParser(usage = usage)
+    if ui:
+        optdict, args = parser.parse_args()
+        print(optdict)
+    return parser.parse_args()
+
+def get_address_from_file(url_list_file):
+    with open(url_list_file) as f:
+        lines = []
+        for line in f:
+            lines.append(line)
+    return lines
 
 def convertor(download_dir, ui = True):
     image_names = os.listdir(download_dir)
@@ -36,7 +63,7 @@ def mkdir(dirname, ui = True):
         if ui:
             print("mkdir -r " + dirname)
 
-def download_file(url, filename, ui = True):
+def download_img(url, filename, ui = True):
     try:
         with request.urlopen(url) as web_file:
             time.sleep(0.5)
@@ -49,7 +76,22 @@ def download_file(url, filename, ui = True):
         if ui :
             print("\x1b[31m" + url + " : Time Out!" + "\x1b[0m", file = sys.stderr)
         time.sleep(0.5)
-        download_file(url, filename, ui)
+        download_img(url, filename, ui)
+
+def download_video(url, filename, ui = True):
+    try:
+        response = requests.get(url)
+        with open(filename, mode = 'wb') as local_file:
+            if ui :
+                print("[writting] " + url + " to " + filename)
+            local_file.write(response.content)
+            if ui :
+                print("[written] " + url + " to " + filename)
+    except (urllib.error.URLError, urllib.error.HTTPError) as e:
+        if ui :
+            print("\x1b[31m" + url + " : Time Out!" + "\x1b[0m", file = sys.stderr)
+        time.sleep(0.5)
+        download_video(url, filename, ui)
 
 # この関数使ってない
 # body / main / section / dev の持つクラスのリストを返す
@@ -68,139 +110,125 @@ def get_class(soup):
 
 # アドレスの BeautifulSoup を返す
 def get_soup(address, ui = True):
+    # リクエストヘッダを記述
+    headers = { "User-Agent" : "Mozilla/5.0" }
     try:
         # レスポンスの情報を管理するオブジェクトを返す
         # このオブジェクトからメソッドを呼び出して必要な情報を取り出す
-        with request.urlopen(address) as response:
-            time.sleep(0.5)
-            # 取得した文字列をまとめて取り出す
-            body = response.read()
-            if ui:
-                print("[open] " + address)
-            try:
-                # 文字コードの取得
-                cs = chardet.detect(body)   # {'encoding': 'ascii', 'confidence': 1.0, 'language': ''}
-                data = body.decode(cs['encoding'])
-                # BeautifulSoup オブジェクトの作成
-                soup = BeautifulSoup(data, 'lxml')
-                return soup
-            except UnicodeDecodeError:
-                data = body
-                # BeautifulSoup オブジェクトの作成
-                soup = BeautifulSoup(data, 'lxml')
-                return soup
+        response = requests.get(url = address, headers = headers)
+        time.sleep(0.5)
+        # 取得した文字列をまとめて取り出す
+        body = response.text
+        if ui:
+            print("[open] " + address)
+        data = body
+        # BeautifulSoup オブジェクトの作成
+        soup = BeautifulSoup(data, 'lxml')
+        return soup
     except (urllib.error.URLError, urllib.error.HTTPError) as e:
         if ui :
             print("\x1b[31m" + address + " : Time Out!" + "\x1b[0m", file = sys.stderr)
         time.sleep(0.5)
         get_soup(address, ui)
 
-# アーティスト名の取得
-def get_artist_name(soup, ui = True):
-    spans = soup.find_all("span", itemprop = "name")
-    for span in spans:
-        if ui:
-            print("artist : " + span.text)
-        return span.text
-
-# 投稿記事の URL の取得
-def get_post_urls(soup, article_class, ui = True):
-    # なんかいろいろ大変なことしてたけどこれやれば一発だった...
-    # article には ARTICLE_CLASS クラスの内容物が入る
-    # 複数ある場合は配列になる
-    articles = soup.find_all(class_ = article_class)
+# 特定のクラス _class を持つタグが持つ要素内にある anchor の href を取得
+def get_link_urls(soup, _class, ui = True):
+    # class 名は一つしか指定されていないことが前提（複数の場合は _class をリストにする必要がある）
+    elements = soup.find_all(class_ = _class)
     hrefs = []
 
-    # ARTICLE_CLASS に一致する配列を順次取り出す
-    for article in articles:
-        # article の子要素を順次取り出す
-        for in_article in article.children:
-            if(in_article.name != None):
-                # タグの名前が 'a' だった場合
-                if(in_article.name == 'a'):
-                    hrefs.append(str(in_article['href']))
-                    if ui :
-                        print("[append] " + str(in_article['href']))
+    # _class を持つタグが一つのページに複数あった場合は両方の <a> タグに対して処理する
+    # _class を持つタグ内に <a> タグが一つであること前提（複数の場合は一番上が取得される）
+    for element in elements:
+        anchor = element.find('a')
+        hrefs.append(str(anchor['href']))
+        if ui :
+            print("[append] " + str(anchor['href']))
+    # リストが返る
+    # 理想的には figure class=figure_class はページ内に一つなので、リストじゃなくて文字列として返しても良い
     return hrefs
 
-def get_post_title(suop, ui = True):
-    h1 = soup.find(class_ = "post__title")
-    span = h1.find("span")
-    title = span.text
+class Browser:
+    def __init__(self, bin_loc = "/usr/bin/chromium-browser", ui = True):
+        self.selenium_init(bin_loc, ui)
+
+    # ブラウザを動かすためのクラスを作成する
+    def selenium_init(self, bin_loc = "/usr/bin/chromium-browser", ui = True):
+        # options = Options()
+        # options.add_argument("--headless")
+        # options.binary_location = bin_loc
+        self.driver = webdriver.Chrome()
+
+    # URL で指定したサイトの HTML を全て読み込ませてから取得する
+    def get_soup(self, url, delay = 5, ui = True):
+        # ブラウザでページを開く
+        self.driver.get(url)
+        # ブラウザでページが開ききるのを待つ
+        time.sleep(delay)
+        # HTML ソースを取得
+        html = self.driver.page_source
+        # bs4 型に作成
+        soup = BeautifulSoup(html, "lxml")
+        if ui:
+            print("[open] " + url)
+        return soup
+
+    def reload(self, num = "", ui = True):
+        self.driver.refresh()
+        if ui:
+            string = "Reflesh " + str(num)
+            print("[Processing] " + string)
+
+""" ここから特有 """
+
+# 動画本体の URL の取得
+def get_video_src(soup, video_class, ui = True):
+    # ページ内に同じクラスが複数合った場合一番上が入る
+    video = soup.find("video", class_ = video_class)
+    src = video["src"]
     if ui:
-        print("post title : " + title)
+        print("[append] " + src)
+    # 文字列を返す
+    return src
+
+# 投稿のタイトルを取得
+def get_post_title(suop, ui = True):
+    h1 = soup.find("h1", class_ = "title")
+    title = h1.text
+    if ui:
+        print("[append] : " + title)
     return title
 
-# 画像 URL の取得
-def get_image_urls(soup, anchor_class, ui = True):
-    anchors = soup.find_all(class_ = anchor_class[0])
-    hrefs = []
-
-    for anchor in anchors:
-        img = anchor.find('img')
-        hrefs.append(str(img['src']))
-        if ui :
-            print("[append] " + str(img['src']))
-    return hrefs
-
-# 次のページの URL の取得
-def get_next_page_url(soup):
-    anchors = soup.find_all(class_="next")
-    if anchors is None:
-        return None
-    else:
-        try:
-            return anchors[0]
-        except IndexError as e:
-            return None
-
-def get_address_from_file(url_list_file):
-    with open(url_list_file) as f:
-        lines = []
-        for line in f:
-            lines.append(line)
-    return lines
-
 if __name__ == '__main__':
+    browser = Browser(ui = UI)
     addresses = get_address_from_file(URL_LIST_FILE)
     for address in addresses:
         page_address = address
         nextpage = True
-        post_urls = []
-        artist_name = ""
-        # 次のページがあるときはループし続ける
-        while nextpage:
-            # アーティストページの HTML を取得
-            soup_artist_one_page = get_soup(page_address)
-            # 投稿の URL をリストで取得
-            post_urls.extend([DOMAIN + post_url for post_url in get_post_urls(soup_artist_one_page, ARTICLE_CLASS)])
-            # 次のページの有無と次のページがある場合はその URL
-            next_page_anchor = get_next_page_url(soup_artist_one_page)
-            # 次のページがある場合
-            if next_page_anchor is None:
-                # アーティストの名前を取得
-                artist_name = get_artist_name(soup_artist_one_page)
-                nextpage = False
-            else:
-                page_address = DOMAIN + str(next_page_anchor['href'])
-
-        artist_image_urls = {}
-        for url in post_urls:
-            soup = get_soup(url)
-            post_title = get_post_title(soup)
-            image_urls = get_image_urls(soup, ANCHOR_CLASS)
-            artist_image_urls[post_title] = [DOMAIN + image_url for image_url in image_urls]
-
-        title_and_urls = artist_image_urls
-
-        for title_key in title_and_urls.keys():
-            download_dir = DOWNLOAD_DIR + "/" + artist_name + "/" + title_key
-            mkdir(download_dir)
-            for index, url in enumerate(title_and_urls[title_key]):
-                download_file(url, download_dir + "/" + str(index).zfill(6) + ".png")
-                time.sleep(0.5)
-
-            convertor(download_dir)
-
+        # メインページの HTML を取得
+        soup = get_soup(page_address, UI)   # [open] https://hogehoge...
+        # 次のページの URL を取得
+        urls = get_link_urls(soup, FIGURE_CLASS, UI)    # [append] https://piyopiyo...
+        # リストが返ってきてしまう
+        # どうせ一つしか無いので文字列型に変換
+        url = str(urls[0])
+        for index in range(COUNT):
+            # 次のページの HTML を取得
+            soup = browser.get_soup(url, ui = UI)
+            try:
+                # 動画の URL を取得
+                src = get_video_src(soup, VIDEO_CLASS, UI)
+                break;
+            except:
+                browser.reload(index + 1)
+            if index >= COUNT:
+                print("[error] " + "Can not access the video " + url, file = sys.stderr)
+                sys.exit(1)
+        # 返される URL は文字が抜けてるので URL として正しい文字列に再生成
+        src = "https:" + str(src)
+        # タイトルの取得とファイル名の生成
+        title = DOWNLOAD_DIR + get_post_title(url) + ".mp4"
+        # 動画を取得
+        download_video(src, title, UI)
 
 

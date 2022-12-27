@@ -18,10 +18,6 @@
 ## 特徴
 アーティストの URL を入力すれば画像を取り出してくれて、ユーザがちまちま画像を保存しなくて済む
 
-`selenium` を使用しないため、コンソールのみでのスクレイピングが可能
-
-CLI での使用に限られたサーバーのような環境でスクレイピングでき、ユーザの環境を極力選ばない構造
-
 ユーザごとに保存先のディレクトリが用意されるので後からまとめ直す必要が無い
 
 投稿ごとに保存先のディレクトリが用意されるので後からまとめ直す必要が無い
@@ -32,15 +28,53 @@ CLI での使用に限られたサーバーのような環境でスクレイピ�
 - OS : Ubuntu 20.04
 - Python : 3.8.10
     - pip : 20.0.2
-        - chardet : 3.0.4
-        - NumPy : 1.19.3
         - BeautifulSoup : 4.8.2
+        - Selenium : 4.1.0
         - urllib : 不明
+- Chromium : 107.0.5304.87
+    - Chrome-Driver : 107.0.5304.62
 
 ## 必要な準備
-- [ ] BeautifulSoup 4 のインストール
+- [ ] BeautifulSoup 4 モジュールのインストール
+
+- [ ] Selenium モジュールのインストール
+
+- [ ] Chromium ブラウザのインストール
+
+- [ ] Chrome Driver の取得
 
 - [ ] `lxml` パーサーのインストール
+
+### Chromium, Chrome-Driver
+1. Chromium をインストールする
+    ```
+    sudo apt install -y chromium-browser
+    ```
+
+1. どうにかして Chromium のバージョンを知る
+    どうやって？
+
+1. Chromium のバージョンに合った chrome-driver の zip をダウンロードする
+    バージョンや OS が違う場合は[こ↑ こ↓ ](https://chromedriver.chromium.org/downloads)から探して適宜ダウンロード
+    ```
+    wget https://chromedriver.storage.googleapis.com/index.html?path=107.0.5304.62/
+    ```
+
+1. zip を解凍する
+    ```
+    unzip chromedriver_linux64.zip
+    ```
+    すると chromedriver という実行ファイルが出てくる
+
+1. chromedriver を PATH の通ったディレクトリに入れる
+    ```
+    mv chrome-driver /usr/local/bin/
+    ```
+
+#### 注意
+Chrome-Driver のバージョンと Chromium のバージョンは対応関係が厳密なのでバージョン選びをミスるとエラーを吐かれるので注意
+
+Chromium が 107 だったら Chrome-Driver も 107 を選ぶと良い
 
 ## 使用方法
 
@@ -71,6 +105,16 @@ CLI での使用に限られたサーバーのような環境でスクレイピ�
     ./main.py
     ```
 
+# 参考
+- [Python で画像・動画をスクレイピングして自動ダウンロードする - ミナピピンの研究室](https://tkstock.site/2022/01/19/python-requests-mp4-jpg-movie-image-write-download/)
+- [requests でのスクレイピング時に 403 エラーが返された場合の解決策 - ミナピピンの研究室](https://tkstock.site/2021/07/14/python-requests-ec%E3%82%B5%E3%82%A4%E3%83%88-%E3%82%B9%E3%82%AF%E3%83%AC%E3%82%A4%E3%83%94%E3%83%B3%E3%82%B0-403-%E3%82%A8%E3%83%A9%E3%83%BC/#i)
+- [【 Python で Web スクレイピング その 4 】HTML ソースの取得と解析 - インターステラ株式会社 技術ブログ](https://blog.interstellar.co.jp/2019/01/28/python-scraping-4/)
+- [【 Python 】ChromeDriver のエラーまとめ【 selenium 】- すしりんぐ blog](https://sushiringblog.com/chromedriver-error)
+- [selenium で chromedriver のパスが通らない - teratail](https://teratail.com/questions/321709)
+- [【 Python 】Selenium を使ってアクセスしたページをリロード（更新）する方法 - あずみ .NET](http://a-zumi.net/python-selenium-refresh/)
+- [python 『 a bytes-like object is required, not 'Response' 』について - teratail](https://teratail.com/questions/336382)
+
 # LICENSE
 - このソフトウェアは、3 条項 BSD ライセンスの下、再頒布および使用が許可されます。
 - (C) 2022 YAZAWA Kenichi
+
