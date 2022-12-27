@@ -1,28 +1,18 @@
-# kemono
+# oreno3d
 ## 概要
 [oreno3d](https://oreno3d.com) でアップロードされている動画をスクレイピングするスクリプト
 
-** まだ開発中 **
-
-** [kemono ( YazawaKenichi 's Repository ) - GitHub](https://github.com/yazawakenichi/kemono) からまるごとコピーして改造して作成 **
-
 ## サイトの条件
-- 投稿記事の URL が クラス `post-card post-card--preview` の `article` タグにあること
-- article タグの子要素に `a` タグがあり、その `href` が投稿記事の URL であること
-- 次のページの URL が クラス `next` の `a` タグ `href` にあること
-- アーティストの名前が `itemprop` が `name` の `span` タグの要素にあること
-- 投稿記事中の画像が クラス `fileThumb image-link` の `a` タグ にあること
-- その `a` タグが `img` タグをただ一つだけ持つこと
-- `img` タグに `src` が設定されていて、これが投稿された画像であること
+- `ecchi.iwara.tv` の URL が クラス `video-figure` の `a` タグにあること
+- `video-figure` 以外のタグを持っていないこと
+- `video-figure` を持つタグの要素の一番はじめの `a` タグが目的の `href` を持っていること
+- 動画本体が `vjs-tech` クラスを持つ `video` タグの `src` 属性に記述されていること
+- タイトルが `title` クラスを持つ ` h1` タグの要素に記述されていること
 
 ## 特徴
-アーティストの URL を入力すれば画像を取り出してくれて、ユーザがちまちま画像を保存しなくて済む
+投稿動画の URL を `oreno3d.com` の方で入力すれば動画をダウンロードしてくれて、ユーザがちまちま動画を保存しなくて済む
 
-ユーザごとに保存先のディレクトリが用意されるので後からまとめ直す必要が無い
-
-投稿ごとに保存先のディレクトリが用意されるので後からまとめ直す必要が無い
-
-ファイルにアーティストの URL を記述すればそこから読み出して実行するのでユーザは URL をかき集めればいいだけ
+ファイルに投稿動画の URL を記述すればそこから読み出して実行するのでユーザは URL をかき集めればいいだけ
 
 ## 動作環境
 - OS : Ubuntu 20.04
@@ -80,17 +70,13 @@ Chromium が 107 だったら Chrome-Driver も 107 を選ぶと良い
 
 1. このリポジトリを適当な場所にクローン
     ```
-    git clone https://github.com/yazawakenichi/kemono
+    git clone https://github.com/yazawakenichi/oreno3d
     ```
-1. `url` に特定のユーザの `URL` アドレスを指定
-
-    ここで、パラメータ指定 `?` を入れないこと！
-
-    入れた場合はそのページからのスクレイピングになり、アーティストが投稿した全ての画像をスクレイピングできるわけではなくなってしまう！
+1. `url/url` に特定の投稿の `URL` アドレスを指定
 
     `url` ファイルには可能な限り重複した URL を記述しないこと
 
-    記述した場合、二度も同じ画像を保存しようとするため時間がかかる
+    記述した場合、二度も同じ動画を保存しようとするため時間がかかる
 
     重複回避の方法として以下の方法を提示する
 
@@ -105,6 +91,8 @@ Chromium が 107 だったら Chrome-Driver も 107 を選ぶと良い
     ./main.py
     ```
 
+1. `Chromium` がひとりでに動き出して裏でどんどんダウンロードしていくので気長に待つ
+
 # 参考
 - [Python で画像・動画をスクレイピングして自動ダウンロードする - ミナピピンの研究室](https://tkstock.site/2022/01/19/python-requests-mp4-jpg-movie-image-write-download/)
 - [requests でのスクレイピング時に 403 エラーが返された場合の解決策 - ミナピピンの研究室](https://tkstock.site/2021/07/14/python-requests-ec%E3%82%B5%E3%82%A4%E3%83%88-%E3%82%B9%E3%82%AF%E3%83%AC%E3%82%A4%E3%83%94%E3%83%B3%E3%82%B0-403-%E3%82%A8%E3%83%A9%E3%83%BC/#i)
@@ -115,6 +103,6 @@ Chromium が 107 だったら Chrome-Driver も 107 を選ぶと良い
 - [python 『 a bytes-like object is required, not 'Response' 』について - teratail](https://teratail.com/questions/336382)
 
 # LICENSE
-- このソフトウェアは、3 条項 BSD ライセンスの下、再頒布および使用が許可されます。
+- このソフトウェアは、MIT ライセンスの下、再頒布および使用が許可されます。
 - (C) 2022 YAZAWA Kenichi
 

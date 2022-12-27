@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding:utf-8
 # SPDX-FileCopyrightText: YAZAWA Kenichi (2022)
-# SPDX-License-Identifier: BSD 3-Clause "New" or "Revised" License
+# SPDX-License-Identifier: MIT License
 
 # スクレイピング用のモジュール
 # urllib は標準で用意されている
@@ -179,6 +179,9 @@ class Browser:
             string = "Reflesh " + str(num)
             print("[Processing] " + string)
 
+    def __del__(self):
+        self.driver.close()
+
 """ ここから特有 """
 
 # 動画本体の URL の取得
@@ -200,7 +203,6 @@ def get_post_title(suop, ui = True):
     return title
 
 if __name__ == '__main__':
-    browser = Browser(ui = UI)
     addresses = get_address_from_file(URL_LIST_FILE)
     for address in addresses:
         page_address = address
@@ -212,6 +214,8 @@ if __name__ == '__main__':
         # リストが返ってきてしまう
         # どうせ一つしか無いので文字列型に変換
         url = str(urls[0])
+        # ブラウザを開く
+        browser = Browser(ui = UI)
         for index in range(COUNT):
             # 次のページの HTML を取得
             soup = browser.get_soup(url, ui = UI)
@@ -224,11 +228,12 @@ if __name__ == '__main__':
             if index >= COUNT:
                 print("[error] " + "Can not access the video " + url, file = sys.stderr)
                 sys.exit(1)
+        # もう用済み
+        del browser
         # 返される URL は文字が抜けてるので URL として正しい文字列に再生成
         src = "https:" + str(src)
         # タイトルの取得とファイル名の生成
         title = DOWNLOAD_DIR + get_post_title(url) + ".mp4"
         # 動画を取得
         download_video(src, title, UI)
-
 
