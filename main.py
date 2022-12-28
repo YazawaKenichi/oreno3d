@@ -200,7 +200,7 @@ def get_post_title(suop, ui = True):
     title = h1.text
     if ui:
         print("[append] : " + title)
-    return title
+    return title.replace("/", "")
 
 if __name__ == '__main__':
     addresses = get_address_from_file(URL_LIST_FILE)
@@ -217,23 +217,24 @@ if __name__ == '__main__':
         # ブラウザを開く
         browser = Browser(ui = UI)
         for index in range(COUNT):
-            # 次のページの HTML を取得
-            soup = browser.get_soup(url, ui = UI)
             try:
+                # 次のページの HTML を取得
+                soup = browser.get_soup(url, ui = UI)
                 # 動画の URL を取得
                 src = get_video_src(soup, VIDEO_CLASS, UI)
-                break;
-            except:
-                browser.reload(index + 1)
+                # 返される URL は文字が抜けてるので URL として正しい文字列に再生成
+                src = "https:" + str(src)
+                # タイトルの取得とファイル名の生成
+                title = DOWNLOAD_DIR + get_post_title(url) + ".mp4"
+                # 動画を取得
+                download_video(src, title, UI)
+                break
+            except TypeError:
+                print("[process] retry ... ")
+                time.sleep(3)
+                # browser.reload(index + 1)
             if index >= COUNT:
                 print("[error] " + "Can not access the video " + url, file = sys.stderr)
-                sys.exit(1)
         # もう用済み
         del browser
-        # 返される URL は文字が抜けてるので URL として正しい文字列に再生成
-        src = "https:" + str(src)
-        # タイトルの取得とファイル名の生成
-        title = DOWNLOAD_DIR + get_post_title(url) + ".mp4"
-        # 動画を取得
-        download_video(src, title, UI)
 
