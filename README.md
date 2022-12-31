@@ -101,6 +101,7 @@ Chromium が 107 だったら Chrome-Driver も 107 を選ぶと良い
 - [selenium で chromedriver のパスが通らない - teratail](https://teratail.com/questions/321709)
 - [【 Python 】Selenium を使ってアクセスしたページをリロード（更新）する方法 - あずみ .NET](http://a-zumi.net/python-selenium-refresh/)
 - [python 『 a bytes-like object is required, not 'Response' 』について - teratail](https://teratail.com/questions/336382)
+- [Python でファイルの読み込み、書き込み（作成・追記） - note.nkmk.me](https://note.nkmk.me/python-file-io-open-with/#:~:text=%E3%81%AE%E8%BF%BD%E8%A8%98%E3%83%BB%E6%8C%BF%E5%85%A5-,%E6%9C%AB%E5%B0%BE%E3%81%AB%E8%BF%BD%E8%A8%98%3A%20mode%3D'a',%E3%81%AE%E6%9C%AB%E5%B0%BE%E3%81%AB%E8%BF%BD%E8%A8%98%E3%81%A7%E3%81%8D%E3%82%8B%E3%80%82)
 
 # LICENSE
 - このソフトウェアは、MIT ライセンスの下、再頒布および使用が許可されます。

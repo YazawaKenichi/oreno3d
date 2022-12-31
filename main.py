@@ -27,8 +27,10 @@ DOMAIN = 'http://oreno3d.com'
 FIGURE_CLASS = 'video-figure'
 VIDEO_CLASS = "vjs-tech"
 
+DELAY = 10
 COUNT = 5
 DOWNLOAD_DIR = './downloads/'
+LOGFILEPATH = "./url/cant"
 URL_LIST_FILE = "./url/url"
 UI = True
 
@@ -62,6 +64,12 @@ def mkdir(dirname, ui = True):
         os.makedirs(dirname)
         if ui:
             print("mkdir -r " + dirname)
+
+def file_append(path, string, ui = True):
+    with open(path, mode = "a") as f:
+        f.write(string)
+        if ui:
+            print("[log] " + string.rstrip() + " > " + path)
 
 def download_img(url, filename, ui = True):
     try:
@@ -159,18 +167,23 @@ class Browser:
         # options.binary_location = bin_loc
         self.driver = webdriver.Chrome()
 
-    # URL で指定したサイトの HTML を全て読み込ませてから取得する
-    def get_soup(self, url, delay = 5, ui = True):
+    # url のページを開く
+    def open_link(self, url, delay = 19, ui = True):
+        if ui:
+            print("[open] " + url.rstrip())
         # ブラウザでページを開く
         self.driver.get(url)
         # ブラウザでページが開ききるのを待つ
         time.sleep(delay)
+
+    # URL で指定したサイトの HTML を全て読み込ませてから取得する
+    def get_soup(self, ui = True):
         # HTML ソースを取得
         html = self.driver.page_source
         # bs4 型に作成
         soup = BeautifulSoup(html, "lxml")
         if ui:
-            print("[open] " + url)
+            print("[get] " + url.rstrip())
         return soup
 
     def reload(self, num = "", ui = True):
@@ -200,11 +213,15 @@ def get_post_title(suop, ui = True):
     title = h1.text
     if ui:
         print("[append] : " + title)
-    return title.replace("/", "")
+    return title.replace("/", "|")
 
 if __name__ == '__main__':
     addresses = get_address_from_file(URL_LIST_FILE)
+    # ブラウザを開く
+    browser = Browser(ui = UI)
     for address in addresses:
+        if UI:
+            print(" ===== ===== ===== ===== ===== ===== ")
         page_address = address
         nextpage = True
         # メインページの HTML を取得
@@ -214,27 +231,37 @@ if __name__ == '__main__':
         # リストが返ってきてしまう
         # どうせ一つしか無いので文字列型に変換
         url = str(urls[0])
-        # ブラウザを開く
-        browser = Browser(ui = UI)
-        for index in range(COUNT):
-            try:
-                # 次のページの HTML を取得
-                soup = browser.get_soup(url, ui = UI)
-                # 動画の URL を取得
-                src = get_video_src(soup, VIDEO_CLASS, UI)
-                # 返される URL は文字が抜けてるので URL として正しい文字列に再生成
-                src = "https:" + str(src)
-                # タイトルの取得とファイル名の生成
-                title = DOWNLOAD_DIR + get_post_title(url) + ".mp4"
-                # 動画を取得
-                download_video(src, title, UI)
-                break
-            except TypeError:
-                print("[process] retry ... ")
-                time.sleep(3)
-                # browser.reload(index + 1)
-            if index >= COUNT:
-                print("[error] " + "Can not access the video " + url, file = sys.stderr)
-        # もう用済み
-        del browser
+        catnt = False
+        for jndex in range(COUNT):
+            cant = False
+            for index in range(COUNT):
+                cant = False
+                try:
+                    # soup 取得
+                    browser.open_link(url, delay = DELAY, ui = UI)
+                    soup = browser.get_soup(ui = UI)
+                    # 動画の URL を取得
+                    src = get_video_src(soup, VIDEO_CLASS, UI)
+                    # 返される URL は文字が抜けてるので URL として正しい文字列に再生成
+                    src = "https:" + str(src)
+                    # タイトルの取得とファイル名の生成
+                    title = DOWNLOAD_DIR + get_post_title(url) + ".mp4"
+                    # 動画を取得
+                    download_video(src, title, UI)
+                    break
+                except TypeError:
+                    print("[process] retry ... ")
+                    time.sleep(DELAY)
+                    # browser.reload(index + 1)
+                    if index >= COUNT - 1:
+                        # URL 取得に失敗しまくったら
+                        cant = True
+            if not cant:
+                break;
+        if cant:
+            print("[error] " + "Can not access the video " + url, file = sys.stderr)
+            file_append(LOGFILEPATH, address, UI)
+
+    # もう用済み
+    del browser
 
