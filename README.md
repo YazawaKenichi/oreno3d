@@ -47,7 +47,7 @@
 1. Chromium のバージョンに合った chrome-driver の zip をダウンロードする
     バージョンや OS が違う場合は[こ↑ こ↓ ](https://chromedriver.chromium.org/downloads)から探して適宜ダウンロード
     ```
-    wget https://chromedriver.storage.googleapis.com/index.html?path=107.0.5304.62/
+    wget https://chromedriver.storage.googleapis.com/107.0.5304.62/chromedriver_linux64.zip
     ```
 
 1. zip を解凍する
@@ -58,7 +58,7 @@
 
 1. chromedriver を PATH の通ったディレクトリに入れる
     ```
-    mv chrome-driver /usr/local/bin/
+    sudo mv chromedriver /usr/local/bin/
     ```
 
 #### 注意
